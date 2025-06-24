@@ -32,6 +32,13 @@
                             </widget>
                         </item>
                         <item>
+                            <widget class="QPushButton" name="inputCitiesButton">
+                                <property name="text">
+                                    <string>Ввести города</string>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
                             <widget class="QTextEdit" name="textEdit">
                                 <property name="placeholderText">
                                     <string>Введите города (x,y,приоритет) по одному на строку</string>

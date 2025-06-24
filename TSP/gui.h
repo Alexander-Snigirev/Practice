@@ -27,6 +27,7 @@ public:
 private slots:
     void on_loadFileButton_clicked();
     void on_generateRandomButton_clicked();
+    void on_inputCitiesButton_clicked();
 
 private:
     Ui::Gui *ui;

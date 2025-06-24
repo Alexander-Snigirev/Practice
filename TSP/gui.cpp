@@ -17,8 +17,7 @@ Gui::Gui(QWidget *parent)
     compareScene = new QGraphicsScene(this);
     ui->graphicsView->setScene(scene);
     ui->compareGraphicsView->setScene(compareScene);
-
-    // Оптимизация рендеринга для минимизации предупреждений CATransaction
+    
     ui->graphicsView->setOptimizationFlag(QGraphicsView::DontSavePainterState, true);
     ui->compareGraphicsView->setOptimizationFlag(QGraphicsView::DontSavePainterState, true);
 
@@ -32,9 +31,9 @@ Gui::~Gui()
 
 void Gui::updateButtonsState()
 {
-    // Кнопки активны только при наличии городов
     ui->loadFileButton->setEnabled(true);
     ui->generateRandomButton->setEnabled(true);
+    ui->inputCitiesButton->setEnabled(true);
 }
 
 void Gui::on_loadFileButton_clicked()
@@ -83,6 +82,14 @@ void Gui::on_generateRandomButton_clicked()
     updateButtonsState();
 }
 
+void Gui::on_inputCitiesButton_clicked()
+{
+    readCitiesFromInput();
+    drawSolution();
+    drawCompareSolution();
+    updateButtonsState();
+}
+
 void Gui::readCitiesFromInput()
 {
     cities.clear();
@@ -91,12 +98,16 @@ void Gui::readCitiesFromInput()
     for (const QString &line : lines) {
         QStringList fields = line.split(",");
         if (fields.size() == 3) {
-            City p = {fields[0].toDouble(), fields[1].toDouble(), fields[2].toInt()};
-            cities.append(p);
+            bool xOk, yOk, priorityOk;
+            double x = fields[0].toDouble(&xOk);
+            double y = fields[1].toDouble(&yOk);
+            int priority = fields[2].toInt(&priorityOk);
+            if (xOk && yOk && priorityOk) {
+                City p = {x, y, priority};
+                cities.append(p);
+            }
         }
     }
-    drawSolution();
-    drawCompareSolution();
 }
 
 void Gui::drawSolution()
