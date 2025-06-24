@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+    <class>Gui</class>
+    <widget class="QMainWindow" name="Gui">
+        <property name="geometry">
+            <rect>
+                <x>0</x>
+                <y>0</y>
+                <width>1200</width>
+                <height>600</height>
+            </rect>
+        </property>
+        <property name="windowTitle">
+            <string>Задача коммивояжера с приоритетами</string>
+        </property>
+        <widget class="QWidget" name="centralwidget">
+            <layout class="QHBoxLayout" name="horizontalLayout">
+                <item>
+                    <layout class="QVBoxLayout" name="verticalLayout">
+                        <item>
+                            <widget class="QPushButton" name="loadFileButton">
+                                <property name="text">
+                                    <string>Загрузить из файла</string>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QPushButton" name="generateRandomButton">
+                                <property name="text">
+                                    <string>Сгенерировать случайно</string>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QTextEdit" name="textEdit">
+                                <property name="placeholderText">
+                                    <string>Введите города (x,y,приоритет) по одному на строку</string>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QGroupBox" name="paramsGroup">
+                                <property name="title">
+                                    <string>Параметры генетического алгоритма</string>
+                                </property>
+                                <layout class="QVBoxLayout" name="verticalLayout_2">
+                                    <item>
+                                        <layout class="QHBoxLayout" name="popSizeLayout">
+                                            <item>
+                                                <widget class="QLabel" name="label">
+                                                    <property name="text">
+                                                        <string>Размер популяции:</string>
+                                                    </property>
+                                                </widget>
+                                            </item>
+                                            <item>
+                                                <widget class="QSpinBox" name="popSizeSpinBox">
+                                                    <property name="minimum">
+                                                        <number>10</number>
+                                                    </property>
+                                                    <property name="maximum">
+                                                        <number>1000</number>
+                                                    </property>
+                                                    <property name="value">
+                                                        <number>100</number>
+                                                    </property>
+                                                </widget>
+                                            </item>
+                                        </layout>
+                                    </item>
+                                    <item>
+                                        <layout class="QHBoxLayout" name="mutationRateLayout">
+                                            <item>
+                                                <widget class="QLabel" name="label_2">
+                                                    <property name="text">
+                                                        <string>Вероятность мутации:</string>
+                                                    </property>
+                                                </widget>
+                                            </item>
+                                            <item>
+                                                <widget class="QDoubleSpinBox" name="mutationRateSpinBox">
+                                                    <property name="maximum">
+                                                        <double>1.000000000000000</double>
+                                                    </property>
+                                                    <property name="singleStep">
+                                                        <double>0.010000000000000</double>
+                                                    </property>
+                                                    <property name="value">
+                                                        <double>0.010000000000000</double>
+                                                    </property>
+                                                </widget>
+                                            </item>
+                                        </layout>
+                                    </item>
+                                    <item>
+                                        <layout class="QHBoxLayout" name="maxGenLayout">
+                                            <item>
+                                                <widget class="QLabel" name="label_3">
+                                                    <property name="text">
+                                                        <string>Максимум поколений:</string>
+                                                    </property>
+                                                </widget>
+                                            </item>
+                                            <item>
+                                                <widget class="QSpinBox" name="maxGenSpinBox">
+                                                    <property name="minimum">
+                                                        <number>100</number>
+                                                    </property>
+                                                    <property name="maximum">
+                                                        <number>10000</number>
+                                                    </property>
+                                                    <property name="value">
+                                                        <number>1000</number>
+                                                    </property>
+                                                </widget>
+                                            </item>
+                                        </layout>
+                                    </item>
+                                    <item>
+                                        <layout class="QHBoxLayout" name="selectionMethodLayout">
+                                            <item>
+                                                <widget class="QLabel" name="label_4">
+                                                    <property name="text">
+                                                        <string>Метод селекции:</string>
+                                                    </property>
+                                                </widget>
+                                            </item>
+                                            <item>
+                                                <widget class="QComboBox" name="selectionMethodComboBox">
+                                                    <item>
+                                                        <property name="text">
+                                                            <string>Случайный</string>
+                                                        </property>
+                                                    </item>
+                                                    <item>
+                                                        <property name="text">
+                                                            <string>Турнирный</string>
+                                                        </property>
+                                                    </item>
+                                                </widget>
+                                            </item>
+                                        </layout>
+                                    </item>
+                                    <item>
+                                        <widget class="QPushButton" name="applyParamsButton">
+                                            <property name="text">
+                                                <string>Применить параметры</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                </layout>
+                            </widget>
+                        </item>
+                        <item>
+                            <layout class="QHBoxLayout" name="backLayout">
+                                <item>
+                                    <widget class="QPushButton" name="backButton">
+                                        <property name="text">
+                                            <string>Вернуться назад</string>
+                                        </property>
+                                    </widget>
+                                </item>
+                                <item>
+                                    <widget class="QSpinBox" name="backStepsSpinBox">
+                                        <property name="minimum">
+                                            <number>1</number>
+                                        </property>
+                                        <property name="maximum">
+                                            <number>100</number>
+                                        </property>
+                                        <property name="value">
+                                            <number>1</number>
+                                        </property>
+                                    </widget>
+                                </item>
+                            </layout>
+                        </item>
+                        <item>
+                            <widget class="QPushButton" name="runStepButton">
+                                <property name="text">
+                                    <string>Следующий шаг</string>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QPushButton" name="runToEndButton">
+                                <property name="text">
+                                    <string>Запустить до конца</string>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QLabel" name="generationLabel">
+                                <property name="text">
+                                    <string>Поколение: 0</string>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QLabel" name="bestFitnessLabel">
+                                <property name="text">
+                                    <string>Лучшая приспособленность: -</string>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QLabel" name="avgFitnessLabel">
+                                <property name="text">
+                                    <string>Средняя приспособленность: -</string>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <layout class="QHBoxLayout" name="solutionSelectionLayout">
+                                <item>
+                                    <widget class="QLabel" name="label_5">
+                                        <property name="text">
+                                            <string>Выбрать решение:</string>
+                                        </property>
+                                    </widget>
+                                </item>
+                                <item>
+                                    <widget class="QComboBox" name="solutionComboBox"/>
+                                </item>
+                            </layout>
+                        </item>
+                    </layout>
+                </item>
+                <item>
+                    <layout class="QVBoxLayout" name="verticalLayout_3" stretch="2,3">
+                        <item>
+                            <widget class="QGraphicsView" name="graphicsView">
+                                <property name="sizePolicy">
+                                    <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                                        <horstretch>0</horstretch>
+                                        <verstretch>2</verstretch>
+                                    </sizepolicy>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <layout class="QHBoxLayout" name="compareLayout" stretch="3,1">
+                                <item>
+                                    <widget class="QGraphicsView" name="compareGraphicsView">
+                                        <property name="sizePolicy">
+                                            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                                                <horstretch>0</horstretch>
+                                                <verstretch>3</verstretch>
+                                            </sizepolicy>
+                                        </property>
+                                    </widget>
+                                </item>
+                                <item>
+                                    <layout class="QVBoxLayout" name="compareSelectionLayout">
+                                        <item>
+                                            <widget class="QLabel" name="label_6">
+                                                <property name="text">
+                                                    <string>Сравнить с:</string>
+                                                </property>
+                                                <property name="maximumWidth">
+                                                    <number>150</number>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                        <item>
+                                            <widget class="QComboBox" name="compareComboBox">
+                                                <property name="maximumWidth">
+                                                    <number>150</number>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                    </layout>
+                                </item>
+                            </layout>
+                        </item>
+                    </layout>
+                </item>
+            </layout>
+        </widget>
+        <widget class="QMenuBar" name="menubar"/>
+        <widget class="QStatusBar" name="statusbar"/>
+    </widget>
+    <resources/>
+    <connections/>
+</ui>
