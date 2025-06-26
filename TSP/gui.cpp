@@ -8,6 +8,8 @@
 #include <QPen>
 #include <QBrush>
 #include <QInputDialog>
+#include <QtCharts/QLineSeries>
+#include <QThread>
 
 Gui::Gui(QWidget *parent)
         : QMainWindow(parent), ui(new Ui::Gui)
@@ -21,12 +23,76 @@ Gui::Gui(QWidget *parent)
     ui->graphicsView->setOptimizationFlag(QGraphicsView::DontSavePainterState, true);
     ui->compareGraphicsView->setOptimizationFlag(QGraphicsView::DontSavePainterState, true);
 
+    // Инициализация графика
+    setupChart();
+
     updateButtonsState();
 }
 
 Gui::~Gui()
 {
     delete ui;
+}
+
+void Gui::setupChart()
+{
+    // Создаем серии данных
+    bestFitnessSeries = new QLineSeries();
+    bestFitnessSeries->setName("Лучшая приспособленность");
+    bestFitnessSeries->setColor(Qt::red);
+
+    avgFitnessSeries = new QLineSeries();
+    avgFitnessSeries->setName("Средняя приспособленность");
+    avgFitnessSeries->setColor(Qt::blue);
+
+    // Создаем график
+    chart = new QChart();
+    chart->addSeries(bestFitnessSeries);
+    chart->addSeries(avgFitnessSeries);
+    chart->createDefaultAxes();
+    chart->setTitle("Динамика приспособленности по поколениям");
+    chart->legend()->setVisible(true);
+    chart->setTitleFont(QFont("Arial", 12));
+    chart->axes(Qt::Horizontal).first()->setTitleFont(QFont("Arial", 10));
+    chart->axes(Qt::Vertical).first()->setTitleFont(QFont("Arial", 10));
+    chart->legend()->setFont(QFont("Arial", 10));
+
+    // Настройка осей
+    chart->axes(Qt::Horizontal).first()->setTitleText("Поколение");
+    chart->axes(Qt::Vertical).first()->setTitleText("Приспособленность");
+
+    // Создаем view для графика
+    chartView = new QChartView(chart);
+    chartView->setRenderHint(QPainter::Antialiasing);
+    chartView->setMinimumSize(600, 400); // Большой размер для графика
+
+    // Добавляем график в verticalLayout_3
+    ui->verticalLayout_3->addWidget(chartView);
+}
+
+void Gui::updateChart(int generation, double bestFitness, double avgFitness)
+{
+    bestFitnessSeries->append(generation, bestFitness);
+    avgFitnessSeries->append(generation, avgFitness);
+
+    // Обновляем оси
+    chart->axes(Qt::Horizontal).first()->setRange(0, generation + 1);
+    chart->axes(Qt::Vertical).first()->setRange(0, bestFitness + 2);
+
+    QApplication::processEvents();
+}
+
+// Остальные методы (simulateAlgorithm, on_loadFileButton_clicked, etc.) остаются без изменений
+// Метод для тестирования графика
+void Gui::simulateAlgorithm()
+{
+    for (int generation = 0; generation < 20; ++generation) {
+        double bestFitness = 1.0 + generation * 0.5 + (rand() % 10) * 0.1;
+        double avgFitness = 1.0 + generation * 0.3 + (rand() % 5) * 0.1;
+
+        updateChart(generation, bestFitness, avgFitness);
+        QThread::msleep(200);
+    }
 }
 
 void Gui::updateButtonsState()

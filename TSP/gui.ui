@@ -6,42 +6,53 @@
             <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>1200</width>
-                <height>600</height>
+                <width>1400</width>
+                <height>800</height>
             </rect>
         </property>
         <property name="windowTitle">
             <string>Задача коммивояжера с приоритетами</string>
         </property>
         <widget class="QWidget" name="centralwidget">
-            <layout class="QHBoxLayout" name="horizontalLayout">
+            <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,2">
+                <!-- Левая часть: элементы управления -->
                 <item>
                     <layout class="QVBoxLayout" name="verticalLayout">
                         <item>
-                            <widget class="QPushButton" name="loadFileButton">
-                                <property name="text">
-                                    <string>Загрузить из файла</string>
-                                </property>
-                            </widget>
-                        </item>
-                        <item>
-                            <widget class="QPushButton" name="generateRandomButton">
-                                <property name="text">
-                                    <string>Сгенерировать случайно</string>
-                                </property>
-                            </widget>
-                        </item>
-                        <item>
-                            <widget class="QPushButton" name="inputCitiesButton">
-                                <property name="text">
-                                    <string>Ввести города</string>
-                                </property>
-                            </widget>
+                            <layout class="QHBoxLayout" name="buttonLayout">
+                                <item>
+                                    <widget class="QPushButton" name="loadFileButton">
+                                        <property name="text">
+                                            <string>Загрузить из файла</string>
+                                        </property>
+                                    </widget>
+                                </item>
+                                <item>
+                                    <widget class="QPushButton" name="generateRandomButton">
+                                        <property name="text">
+                                            <string>Сгенерировать случайно</string>
+                                        </property>
+                                    </widget>
+                                </item>
+                                <item>
+                                    <widget class="QPushButton" name="inputCitiesButton">
+                                        <property name="text">
+                                            <string>Ввести города</string>
+                                        </property>
+                                    </widget>
+                                </item>
+                            </layout>
                         </item>
                         <item>
                             <widget class="QTextEdit" name="textEdit">
                                 <property name="placeholderText">
                                     <string>Введите города (x,y,приоритет) по одному на строку</string>
+                                </property>
+                                <property name="minimumSize">
+                                    <size>
+                                        <width>0</width>
+                                        <height>100</height>
+                                    </size>
                                 </property>
                             </widget>
                         </item>
@@ -119,31 +130,6 @@
                                                     <property name="value">
                                                         <number>1000</number>
                                                     </property>
-                                                </widget>
-                                            </item>
-                                        </layout>
-                                    </item>
-                                    <item>
-                                        <layout class="QHBoxLayout" name="selectionMethodLayout">
-                                            <item>
-                                                <widget class="QLabel" name="label_4">
-                                                    <property name="text">
-                                                        <string>Метод селекции:</string>
-                                                    </property>
-                                                </widget>
-                                            </item>
-                                            <item>
-                                                <widget class="QComboBox" name="selectionMethodComboBox">
-                                                    <item>
-                                                        <property name="text">
-                                                            <string>Случайный</string>
-                                                        </property>
-                                                    </item>
-                                                    <item>
-                                                        <property name="text">
-                                                            <string>Турнирный</string>
-                                                        </property>
-                                                    </item>
                                                 </widget>
                                             </item>
                                         </layout>
@@ -233,8 +219,9 @@
                         </item>
                     </layout>
                 </item>
+                <!-- Правая часть: окно вывода, окно сравнения, график -->
                 <item>
-                    <layout class="QVBoxLayout" name="verticalLayout_3" stretch="2,2,3">
+                    <layout class="QVBoxLayout" name="verticalLayout_3" stretch="2,3">
                         <item>
                             <widget class="QGraphicsView" name="graphicsView">
                                 <property name="sizePolicy">
@@ -243,19 +230,12 @@
                                         <verstretch>2</verstretch>
                                     </sizepolicy>
                                 </property>
-                            </widget>
-                        </item>
-                        <item>
-                            <widget class="QWidget" name="fitnessChartView" native="true">
-                                <property name="sizePolicy">
-                                    <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-                                        <horstretch>0</horstretch>
-                                        <verstretch>2</verstretch>
-                                    </sizepolicy>
+                                <property name="minimumSize">
+                                    <size>
+                                        <width>400</width>
+                                        <height>200</height>
+                                    </size>
                                 </property>
-                                <attribute name="class">
-                                    <string>QtCharts::QChartView</string>
-                                </attribute>
                             </widget>
                         </item>
                         <item>
@@ -267,6 +247,12 @@
                                                 <horstretch>0</horstretch>
                                                 <verstretch>3</verstretch>
                                             </sizepolicy>
+                                        </property>
+                                        <property name="minimumSize">
+                                            <size>
+                                                <width>400</width>
+                                                <height>200</height>
+                                            </size>
                                         </property>
                                     </widget>
                                 </item>
