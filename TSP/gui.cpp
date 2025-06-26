@@ -17,7 +17,7 @@ Gui::Gui(QWidget *parent)
     compareScene = new QGraphicsScene(this);
     ui->graphicsView->setScene(scene);
     ui->compareGraphicsView->setScene(compareScene);
-    
+
     ui->graphicsView->setOptimizationFlag(QGraphicsView::DontSavePainterState, true);
     ui->compareGraphicsView->setOptimizationFlag(QGraphicsView::DontSavePainterState, true);
 

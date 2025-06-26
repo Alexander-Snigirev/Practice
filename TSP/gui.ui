@@ -234,7 +234,7 @@
                     </layout>
                 </item>
                 <item>
-                    <layout class="QVBoxLayout" name="verticalLayout_3" stretch="2,3">
+                    <layout class="QVBoxLayout" name="verticalLayout_3" stretch="2,2,3">
                         <item>
                             <widget class="QGraphicsView" name="graphicsView">
                                 <property name="sizePolicy">
@@ -243,6 +243,19 @@
                                         <verstretch>2</verstretch>
                                     </sizepolicy>
                                 </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QWidget" name="fitnessChartView" native="true">
+                                <property name="sizePolicy">
+                                    <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                                        <horstretch>0</horstretch>
+                                        <verstretch>2</verstretch>
+                                    </sizepolicy>
+                                </property>
+                                <attribute name="class">
+                                    <string>QtCharts::QChartView</string>
+                                </attribute>
                             </widget>
                         </item>
                         <item>
@@ -287,6 +300,14 @@
         <widget class="QMenuBar" name="menubar"/>
         <widget class="QStatusBar" name="statusbar"/>
     </widget>
+    <customwidgets>
+        <customwidget>
+            <class>QtCharts::QChartView</class>
+            <extends>QWidget</extends>
+            <header>QtCharts/QChartView</header>
+            <container>1</container>
+        </customwidget>
+    </customwidgets>
     <resources/>
     <connections/>
 </ui>
