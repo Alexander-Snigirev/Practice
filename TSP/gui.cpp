@@ -5,11 +5,15 @@
 #include <QTextStream>
 #include <QGraphicsEllipseItem>
 #include <QGraphicsTextItem>
+#include <QGraphicsLineItem>
 #include <QPen>
 #include <QBrush>
 #include <QInputDialog>
 #include <QtCharts/QLineSeries>
 #include <QThread>
+#include <cmath>
+#include <random>
+#include <algorithm>
 
 Gui::Gui(QWidget *parent)
         : QMainWindow(parent), ui(new Ui::Gui)
@@ -25,6 +29,7 @@ Gui::Gui(QWidget *parent)
 
     // Инициализация графика
     setupChart();
+    currentGeneration = 0;
 
     updateButtonsState();
 }
@@ -36,7 +41,6 @@ Gui::~Gui()
 
 void Gui::setupChart()
 {
-    // Создаем серии данных
     bestFitnessSeries = new QLineSeries();
     bestFitnessSeries->setName("Лучшая приспособленность");
     bestFitnessSeries->setColor(Qt::red);
@@ -45,7 +49,6 @@ void Gui::setupChart()
     avgFitnessSeries->setName("Средняя приспособленность");
     avgFitnessSeries->setColor(Qt::blue);
 
-    // Создаем график
     chart = new QChart();
     chart->addSeries(bestFitnessSeries);
     chart->addSeries(avgFitnessSeries);
@@ -57,16 +60,13 @@ void Gui::setupChart()
     chart->axes(Qt::Vertical).first()->setTitleFont(QFont("Arial", 10));
     chart->legend()->setFont(QFont("Arial", 10));
 
-    // Настройка осей
     chart->axes(Qt::Horizontal).first()->setTitleText("Поколение");
     chart->axes(Qt::Vertical).first()->setTitleText("Приспособленность");
 
-    // Создаем view для графика
     chartView = new QChartView(chart);
     chartView->setRenderHint(QPainter::Antialiasing);
-    chartView->setMinimumSize(600, 400); // Большой размер для графика
+    chartView->setMinimumSize(600, 400);
 
-    // Добавляем график в verticalLayout_3
     ui->verticalLayout_3->addWidget(chartView);
 }
 
@@ -75,24 +75,15 @@ void Gui::updateChart(int generation, double bestFitness, double avgFitness)
     bestFitnessSeries->append(generation, bestFitness);
     avgFitnessSeries->append(generation, avgFitness);
 
-    // Обновляем оси
     chart->axes(Qt::Horizontal).first()->setRange(0, generation + 1);
-    chart->axes(Qt::Vertical).first()->setRange(0, bestFitness + 2);
+    double maxFitness = std::max(bestFitness, avgFitness);
+    chart->axes(Qt::Vertical).first()->setRange(0, maxFitness * 1.1);
+
+    ui->generationLabel->setText(QString("Поколение: %1").arg(generation));
+    ui->bestFitnessLabel->setText(QString("Лучшая приспособленность: %1").arg(bestFitness, 0, 'f', 2));
+    ui->avgFitnessLabel->setText(QString("Средняя приспособленность: %1").arg(avgFitness, 0, 'f', 2));
 
     QApplication::processEvents();
-}
-
-// Остальные методы (simulateAlgorithm, on_loadFileButton_clicked, etc.) остаются без изменений
-// Метод для тестирования графика
-void Gui::simulateAlgorithm()
-{
-    for (int generation = 0; generation < 20; ++generation) {
-        double bestFitness = 1.0 + generation * 0.5 + (rand() % 10) * 0.1;
-        double avgFitness = 1.0 + generation * 0.3 + (rand() % 5) * 0.1;
-
-        updateChart(generation, bestFitness, avgFitness);
-        QThread::msleep(200);
-    }
 }
 
 void Gui::updateButtonsState()
@@ -100,11 +91,13 @@ void Gui::updateButtonsState()
     ui->loadFileButton->setEnabled(true);
     ui->generateRandomButton->setEnabled(true);
     ui->inputCitiesButton->setEnabled(true);
+    ui->runStepButton->setEnabled(!cities.isEmpty());
+    ui->runToEndButton->setEnabled(!cities.isEmpty());
 }
 
 void Gui::on_loadFileButton_clicked()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, "Открыть файл", "", "Текстовые файлы (*.txt)");
+    QString fileName = QFileDialog::getOpenFileName(this, "Открыть файл", "", "Текстовые файлы (*.txt)", nullptr, QFileDialog::DontUseNativeDialog);
     if (fileName.isEmpty()) return;
 
     QFile file(fileName);
@@ -116,19 +109,66 @@ void Gui::on_loadFileButton_clicked()
     cities.clear();
     QTextStream in(&file);
     while (!in.atEnd()) {
-        QString line = in.readLine();
+        QString line = in.readLine().trimmed();
+        if (line.isEmpty()) continue; // Пропускаем пустые строки
         QStringList fields = line.split(",");
-        if (fields.size() == 3) {
-            City p = {fields[0].toDouble(), fields[1].toDouble(), fields[2].toInt()};
-            cities.append(p);
+        if (fields.size() == 3 && !fields[0].isEmpty() && !fields[1].isEmpty() && !fields[2].isEmpty()) {
+            bool xOk, yOk, priorityOk;
+            double x = fields[0].toDouble(&xOk);
+            double y = fields[1].toDouble(&yOk);
+            int priority = fields[2].toInt(&priorityOk);
+            if (xOk && yOk && priorityOk) {
+                City p = {x, y, priority};
+                cities.append(p);
+            } else {
+                QMessageBox::warning(this, "Ошибка", QString("Некорректные данные в строке: %1").arg(line));
+            }
+        } else {
+            QMessageBox::warning(this, "Ошибка", QString("Неправильный формат строки: %1").arg(line));
         }
     }
     file.close();
+    bestSolution.clear();
+    currentGeneration = 0;
+    bestFitnessSeries->clear();
+    avgFitnessSeries->clear();
     drawSolution();
     drawCompareSolution();
     updateButtonsState();
 }
 
+void Gui::readCitiesFromInput()
+{
+    cities.clear();
+    QString input = ui->textEdit->toPlainText();
+    QStringList lines = input.split("\n");
+    for (const QString &line : lines) {
+        QString trimmedLine = line.trimmed();
+        if (trimmedLine.isEmpty()) continue; // Пропускаем пустые строки
+        QStringList fields = trimmedLine.split(",");
+        if (fields.size() == 3 && !fields[0].isEmpty() && !fields[1].isEmpty() && !fields[2].isEmpty()) {
+            bool xOk, yOk, priorityOk;
+            double x = fields[0].toDouble(&xOk);
+            double y = fields[1].toDouble(&yOk);
+            int priority = fields[2].toInt(&priorityOk);
+            if (xOk && yOk && priorityOk) {
+                City p = {x, y, priority};
+                cities.append(p);
+            } else {
+                QMessageBox::warning(this, "Ошибка", QString("Некорректные данные в строке: %1").arg(trimmedLine));
+            }
+        } else {
+            QMessageBox::warning(this, "Ошибка", QString("Неправильный формат строки: %1").arg(trimmedLine));
+        }
+    }
+    bestSolution.clear();
+    currentGeneration = 0;
+    bestFitnessSeries->clear();
+    avgFitnessSeries->clear();
+    drawSolution();
+    drawCompareSolution();
+    updateButtonsState();
+}
 void Gui::on_generateRandomButton_clicked()
 {
     cities.clear();
@@ -143,6 +183,10 @@ void Gui::on_generateRandomButton_clicked()
         c.priority = QRandomGenerator::global()->bounded(1, 10);
         cities.append(c);
     }
+    bestSolution.clear();
+    currentGeneration = 0;
+    bestFitnessSeries->clear();
+    avgFitnessSeries->clear();
     drawSolution();
     drawCompareSolution();
     updateButtonsState();
@@ -151,29 +195,42 @@ void Gui::on_generateRandomButton_clicked()
 void Gui::on_inputCitiesButton_clicked()
 {
     readCitiesFromInput();
+    bestSolution.clear();
+    currentGeneration = 0;
+    bestFitnessSeries->clear();
+    avgFitnessSeries->clear();
     drawSolution();
     drawCompareSolution();
     updateButtonsState();
 }
 
-void Gui::readCitiesFromInput()
+void Gui::on_runStepButton_clicked()
 {
-    cities.clear();
-    QString input = ui->textEdit->toPlainText();
-    QStringList lines = input.split("\n");
-    for (const QString &line : lines) {
-        QStringList fields = line.split(",");
-        if (fields.size() == 3) {
-            bool xOk, yOk, priorityOk;
-            double x = fields[0].toDouble(&xOk);
-            double y = fields[1].toDouble(&yOk);
-            int priority = fields[2].toInt(&priorityOk);
-            if (xOk && yOk && priorityOk) {
-                City p = {x, y, priority};
-                cities.append(p);
-            }
-        }
-    }
+    if (cities.isEmpty()) return;
+
+    // Имитация шага генетического алгоритма
+    currentGeneration++;
+    double bestFitness = 1.0 + currentGeneration * 0.5 + (rand() % 10) * 0.1;
+    double avgFitness = 1.0 + currentGeneration * 0.3 + (rand() % 5) * 0.1;
+
+    // Генерация случайного решения для демонстрации
+    bestSolution.clear();
+    QVector<int> indices(cities.size());
+    for (int i = 0; i < cities.size(); ++i) indices[i] = i;
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::shuffle(indices.begin(), indices.end(), g);
+    bestSolution = indices;
+
+    updateChart(currentGeneration, bestFitness, avgFitness);
+    drawSolution();
+}
+
+void Gui::on_runToEndButton_clicked()
+{
+    if (cities.isEmpty()) return;
+
+    simulateAlgorithm();
 }
 
 void Gui::drawSolution()
@@ -202,14 +259,64 @@ void Gui::drawSolution()
 
     QPen pointPen(Qt::red);
     QBrush pointBrush(Qt::red);
+    QVector<QPointF> points;
     for (int i = 0; i < cities.size(); ++i) {
         const auto &p = cities[i];
         double x = (p.x - minX) * scaleX;
         double y = (p.y - minY) * scaleY;
+        points.append(QPointF(x, y));
 
         scene->addEllipse(x - 5, y - 5, 10, 10, pointPen, pointBrush);
         QGraphicsTextItem *label = scene->addText(QString("Город %1 (П: %2)").arg(i + 1).arg(p.priority));
         label->setPos(x + 5, y + 5);
+    }
+
+    drawBestSolutionPath(bestSolution);
+}
+
+void Gui::drawBestSolutionPath(const QVector<int> &solution)
+{
+    if (solution.isEmpty()) return;
+
+    double minX = cities[0].x, maxX = cities[0].x;
+    double minY = cities[0].y, maxY = cities[0].y;
+    for (const auto &p : cities) {
+        minX = std::min(minX, p.x);
+        maxX = std::max(maxX, p.x);
+        minY = std::min(minY, p.y);
+        maxY = std::max(maxY, p.y);
+    }
+
+    double paddingX = (maxX - minX) * 0.1;
+    double paddingY = (maxY - minY) * 0.1;
+    minX -= paddingX;
+    maxX += paddingX;
+    minY -= paddingY;
+    maxY += paddingY;
+
+    double scaleX = ui->graphicsView->width() / (maxX - minX);
+    double scaleY = ui->graphicsView->height() / (maxY - minY);
+
+    QPen linePen(Qt::blue);
+    linePen.setWidth(2);
+    for (int i = 0; i < solution.size() - 1; ++i) {
+        int city1 = solution[i];
+        int city2 = solution[i + 1];
+        double x1 = (cities[city1].x - minX) * scaleX;
+        double y1 = (cities[city1].y - minY) * scaleY;
+        double x2 = (cities[city2].x - minX) * scaleX;
+        double y2 = (cities[city2].y - minY) * scaleY;
+        scene->addLine(x1, y1, x2, y2, linePen);
+    }
+
+    if (!solution.isEmpty()) {
+        int firstCity = solution[0];
+        int lastCity = solution[solution.size() - 1];
+        double x1 = (cities[lastCity].x - minX) * scaleX;
+        double y1 = (cities[lastCity].y - minY) * scaleY;
+        double x2 = (cities[firstCity].x - minX) * scaleX;
+        double y2 = (cities[firstCity].y - minY) * scaleY;
+        scene->addLine(x1, y1, x2, y2, linePen);
     }
 }
 
@@ -247,5 +354,33 @@ void Gui::drawCompareSolution()
         compareScene->addEllipse(x - 5, y - 5, 10, 10, pointPen, pointBrush);
         QGraphicsTextItem *label = compareScene->addText(QString("Город %1 (П: %2)").arg(i + 1).arg(p.priority));
         label->setPos(x + 5, y + 5);
+    }
+}
+
+void Gui::simulateAlgorithm()
+{
+    currentGeneration = 0;
+    bestSolution.clear();
+    bestFitnessSeries->clear();
+    avgFitnessSeries->clear();
+
+    int maxGenerations = ui->maxGenSpinBox->value();
+    std::random_device rd;
+    std::mt19937 g(rd());
+
+    for (int generation = 0; generation < maxGenerations; ++generation) {
+        currentGeneration = generation;
+        double bestFitness = 1.0 + generation * 0.5 + (rand() % 10) * 0.1;
+        double avgFitness = 1.0 + generation * 0.3 + (rand() % 5) * 0.1;
+
+        bestSolution.clear();
+        QVector<int> indices(cities.size());
+        for (int i = 0; i < cities.size(); ++i) indices[i] = i;
+        std::shuffle(indices.begin(), indices.end(), g);
+        bestSolution = indices;
+
+        updateChart(generation, bestFitness, avgFitness);
+        drawSolution();
+        QThread::msleep(100);
     }
 }

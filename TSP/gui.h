@@ -32,6 +32,8 @@ private slots:
     void on_loadFileButton_clicked();
     void on_generateRandomButton_clicked();
     void on_inputCitiesButton_clicked();
+    void on_runStepButton_clicked();
+    void on_runToEndButton_clicked();
     void updateChart(int generation, double bestFitness, double avgFitness);
 
 private:
@@ -39,10 +41,12 @@ private:
     QGraphicsScene *scene;
     QGraphicsScene *compareScene;
     QVector<City> cities;
+    QVector<int> bestSolution;
+    int currentGeneration;
 
     // Для графика
     QChart *chart;
-    QChartView *chartView; // Программно созданный chartView
+    QChartView *chartView;
     QLineSeries *bestFitnessSeries;
     QLineSeries *avgFitnessSeries;
 
@@ -52,6 +56,7 @@ private:
     void updateButtonsState();
     void setupChart();
     void simulateAlgorithm();
+    void drawBestSolutionPath(const QVector<int> &solution);
 };
 
 #endif // GUI_H
