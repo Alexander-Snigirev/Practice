@@ -17,10 +17,13 @@ find_package(OpenGL REQUIRED)
 set(SOURCES
         main.cpp
         gui.cpp
+        citydataparser.cpp
 )
 
 set(HEADERS
         gui.h
+        city.h
+        citydataparser.h
 )
 
 set(FORMS

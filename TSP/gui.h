@@ -3,22 +3,18 @@
 
 #include <QMainWindow>
 #include <QGraphicsScene>
-#include <QFile>
 #include <QVector>
 #include <QRandomGenerator>
 #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
+#include "citydataparser.h"
+#include "city.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Gui; }
 QT_END_NAMESPACE
 
 QT_CHARTS_USE_NAMESPACE
-
-struct City {
-    double x, y;
-    int priority;
-};
 
 class Gui : public QMainWindow
 {
@@ -43,6 +39,7 @@ private:
     QVector<City> cities;
     QVector<int> bestSolution;
     int currentGeneration;
+    CityDataParser parser;
 
     // Для графика
     QChart *chart;
@@ -52,7 +49,6 @@ private:
 
     void drawSolution();
     void drawCompareSolution();
-    void readCitiesFromInput();
     void updateButtonsState();
     void setupChart();
     void simulateAlgorithm();

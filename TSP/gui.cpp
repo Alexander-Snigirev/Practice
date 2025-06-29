@@ -2,7 +2,6 @@
 #include "ui_gui.h"
 #include <QFileDialog>
 #include <QMessageBox>
-#include <QTextStream>
 #include <QGraphicsEllipseItem>
 #include <QGraphicsTextItem>
 #include <QGraphicsLineItem>
@@ -100,82 +99,27 @@ void Gui::on_loadFileButton_clicked()
     QString fileName = QFileDialog::getOpenFileName(this, "Открыть файл", "", "Текстовые файлы (*.txt)", nullptr, QFileDialog::DontUseNativeDialog);
     if (fileName.isEmpty()) return;
 
-    QFile file(fileName);
-    if (!file.open(QIODevice::ReadOnly)) {
-        QMessageBox::warning(this, "Ошибка", "Не удалось открыть файл");
-        return;
+    QStringList errorMessages;
+    if (parser.parseFromFile(fileName, cities, errorMessages)) {
+        bestSolution.clear();
+        currentGeneration = 0;
+        bestFitnessSeries->clear();
+        avgFitnessSeries->clear();
+        drawSolution();
+        drawCompareSolution();
+        updateButtonsState();
+    } else {
+        QMessageBox::warning(this, "Ошибка", errorMessages.join("\n"));
     }
-
-    cities.clear();
-    QTextStream in(&file);
-    while (!in.atEnd()) {
-        QString line = in.readLine().trimmed();
-        if (line.isEmpty()) continue; // Пропускаем пустые строки
-        QStringList fields = line.split(",");
-        if (fields.size() == 3 && !fields[0].isEmpty() && !fields[1].isEmpty() && !fields[2].isEmpty()) {
-            bool xOk, yOk, priorityOk;
-            double x = fields[0].toDouble(&xOk);
-            double y = fields[1].toDouble(&yOk);
-            int priority = fields[2].toInt(&priorityOk);
-            if (xOk && yOk && priorityOk) {
-                City p = {x, y, priority};
-                cities.append(p);
-            } else {
-                QMessageBox::warning(this, "Ошибка", QString("Некорректные данные в строке: %1").arg(line));
-            }
-        } else {
-            QMessageBox::warning(this, "Ошибка", QString("Неправильный формат строки: %1").arg(line));
-        }
-    }
-    file.close();
-    bestSolution.clear();
-    currentGeneration = 0;
-    bestFitnessSeries->clear();
-    avgFitnessSeries->clear();
-    drawSolution();
-    drawCompareSolution();
-    updateButtonsState();
 }
 
-void Gui::readCitiesFromInput()
-{
-    cities.clear();
-    QString input = ui->textEdit->toPlainText();
-    QStringList lines = input.split("\n");
-    for (const QString &line : lines) {
-        QString trimmedLine = line.trimmed();
-        if (trimmedLine.isEmpty()) continue; // Пропускаем пустые строки
-        QStringList fields = trimmedLine.split(",");
-        if (fields.size() == 3 && !fields[0].isEmpty() && !fields[1].isEmpty() && !fields[2].isEmpty()) {
-            bool xOk, yOk, priorityOk;
-            double x = fields[0].toDouble(&xOk);
-            double y = fields[1].toDouble(&yOk);
-            int priority = fields[2].toInt(&priorityOk);
-            if (xOk && yOk && priorityOk) {
-                City p = {x, y, priority};
-                cities.append(p);
-            } else {
-                QMessageBox::warning(this, "Ошибка", QString("Некорректные данные в строке: %1").arg(trimmedLine));
-            }
-        } else {
-            QMessageBox::warning(this, "Ошибка", QString("Неправильный формат строки: %1").arg(trimmedLine));
-        }
-    }
-    bestSolution.clear();
-    currentGeneration = 0;
-    bestFitnessSeries->clear();
-    avgFitnessSeries->clear();
-    drawSolution();
-    drawCompareSolution();
-    updateButtonsState();
-}
 void Gui::on_generateRandomButton_clicked()
 {
-    cities.clear();
     bool ok;
     int numCities = QInputDialog::getInt(this, "Количество городов", "Введите количество городов:", 10, 3, 1000, 1, &ok);
     if (!ok) return;
 
+    cities.clear();
     for (int i = 0; i < numCities; ++i) {
         City c;
         c.x = QRandomGenerator::global()->bounded(0, 500);
@@ -194,21 +138,24 @@ void Gui::on_generateRandomButton_clicked()
 
 void Gui::on_inputCitiesButton_clicked()
 {
-    readCitiesFromInput();
-    bestSolution.clear();
-    currentGeneration = 0;
-    bestFitnessSeries->clear();
-    avgFitnessSeries->clear();
-    drawSolution();
-    drawCompareSolution();
-    updateButtonsState();
+    QStringList errorMessages;
+    if (parser.parseFromText(ui->textEdit->toPlainText(), cities, errorMessages)) {
+        bestSolution.clear();
+        currentGeneration = 0;
+        bestFitnessSeries->clear();
+        avgFitnessSeries->clear();
+        drawSolution();
+        drawCompareSolution();
+        updateButtonsState();
+    } else {
+        QMessageBox::warning(this, "Ошибка", errorMessages.join("\n"));
+    }
 }
 
 void Gui::on_runStepButton_clicked()
 {
     if (cities.isEmpty()) return;
 
-    // Имитация шага генетического алгоритма
     currentGeneration++;
     double bestFitness = 1.0 + currentGeneration * 0.5 + (rand() % 10) * 0.1;
     double avgFitness = 1.0 + currentGeneration * 0.3 + (rand() % 5) * 0.1;
@@ -257,14 +204,13 @@ void Gui::drawSolution()
     double scaleX = ui->graphicsView->width() / (maxX - minX);
     double scaleY = ui->graphicsView->height() / (maxY - minY);
 
+    // Отрисовка городов
     QPen pointPen(Qt::red);
     QBrush pointBrush(Qt::red);
-    QVector<QPointF> points;
     for (int i = 0; i < cities.size(); ++i) {
         const auto &p = cities[i];
         double x = (p.x - minX) * scaleX;
         double y = (p.y - minY) * scaleY;
-        points.append(QPointF(x, y));
 
         scene->addEllipse(x - 5, y - 5, 10, 10, pointPen, pointBrush);
         QGraphicsTextItem *label = scene->addText(QString("Город %1 (П: %2)").arg(i + 1).arg(p.priority));
@@ -273,7 +219,42 @@ void Gui::drawSolution()
 
     drawBestSolutionPath(bestSolution);
 }
+void Gui::drawCompareSolution()
+{
+    compareScene->clear();
+    if (cities.isEmpty()) return;
 
+    double minX = cities[0].x, maxX = cities[0].x;
+    double minY = cities[0].y, maxY = cities[0].y;
+    for (const auto &p : cities) {
+        minX = std::min(minX, p.x);
+        maxX = std::max(maxX, p.x);
+        minY = std::min(minY, p.y);
+        maxY = std::max(maxY, p.y);
+    }
+
+    double paddingX = (maxX - minX) * 0.1;
+    double paddingY = (maxY - minY) * 0.1;
+    minX -= paddingX;
+    maxX += paddingX;
+    minY -= paddingY;
+    maxY += paddingY;
+
+    double scaleX = ui->compareGraphicsView->width() / (maxX - minX);
+    double scaleY = ui->compareGraphicsView->height() / (maxY - minY);
+
+    QPen pointPen(Qt::red);
+    QBrush pointBrush(Qt::red);
+    for (int i = 0; i < cities.size(); ++i) {
+        const auto &p = cities[i];
+        double x = (p.x - minX) * scaleX;
+        double y = (p.y - minY) * scaleY;
+
+        compareScene->addEllipse(x - 5, y - 5, 10, 10, pointPen, pointBrush);
+        QGraphicsTextItem *label = compareScene->addText(QString("Город %1 (П: %2)").arg(i + 1).arg(p.priority));
+        label->setPos(x + 5, y + 5);
+    }
+}
 void Gui::drawBestSolutionPath(const QVector<int> &solution)
 {
     if (solution.isEmpty()) return;
@@ -320,43 +301,6 @@ void Gui::drawBestSolutionPath(const QVector<int> &solution)
     }
 }
 
-void Gui::drawCompareSolution()
-{
-    compareScene->clear();
-    if (cities.isEmpty()) return;
-
-    double minX = cities[0].x, maxX = cities[0].x;
-    double minY = cities[0].y, maxY = cities[0].y;
-    for (const auto &p : cities) {
-        minX = std::min(minX, p.x);
-        maxX = std::max(maxX, p.x);
-        minY = std::min(minY, p.y);
-        maxY = std::max(maxY, p.y);
-    }
-
-    double paddingX = (maxX - minX) * 0.1;
-    double paddingY = (maxY - minY) * 0.1;
-    minX -= paddingX;
-    maxX += paddingX;
-    minY -= paddingY;
-    maxY += paddingY;
-
-    double scaleX = ui->compareGraphicsView->width() / (maxX - minX);
-    double scaleY = ui->compareGraphicsView->height() / (maxY - minY);
-
-    QPen pointPen(Qt::red);
-    QBrush pointBrush(Qt::red);
-    for (int i = 0; i < cities.size(); ++i) {
-        const auto &p = cities[i];
-        double x = (p.x - minX) * scaleX;
-        double y = (p.y - minY) * scaleY;
-
-        compareScene->addEllipse(x - 5, y - 5, 10, 10, pointPen, pointBrush);
-        QGraphicsTextItem *label = compareScene->addText(QString("Город %1 (П: %2)").arg(i + 1).arg(p.priority));
-        label->setPos(x + 5, y + 5);
-    }
-}
-
 void Gui::simulateAlgorithm()
 {
     currentGeneration = 0;
@@ -373,6 +317,7 @@ void Gui::simulateAlgorithm()
         double bestFitness = 1.0 + generation * 0.5 + (rand() % 10) * 0.1;
         double avgFitness = 1.0 + generation * 0.3 + (rand() % 5) * 0.1;
 
+        // Генерация случайного решения для демонстрации
         bestSolution.clear();
         QVector<int> indices(cities.size());
         for (int i = 0; i < cities.size(); ++i) indices[i] = i;
