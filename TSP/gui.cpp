@@ -9,10 +9,13 @@
 #include <QBrush>
 #include <QInputDialog>
 #include <QtCharts/QLineSeries>
+#include <QtCharts/QValueAxis>
 #include <QThread>
 #include <cmath>
 #include <random>
 #include <algorithm>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
 
 Gui::Gui(QWidget *parent)
         : QMainWindow(parent), ui(new Ui::Gui)
@@ -23,12 +26,48 @@ Gui::Gui(QWidget *parent)
     ui->graphicsView->setScene(scene);
     ui->compareGraphicsView->setScene(compareScene);
 
+    const int viewSize = 500;
+    ui->graphicsView->setFixedSize(viewSize, viewSize);
+    ui->compareGraphicsView->setFixedSize(viewSize, viewSize);
+
     ui->graphicsView->setOptimizationFlag(QGraphicsView::DontSavePainterState, true);
     ui->compareGraphicsView->setOptimizationFlag(QGraphicsView::DontSavePainterState, true);
 
     // Инициализация графика
     setupChart();
     currentGeneration = 0;
+
+    QWidget *centralWidget = new QWidget(this);
+    setCentralWidget(centralWidget);
+    QHBoxLayout *mainLayout = new QHBoxLayout(centralWidget);
+
+    QWidget *controlWidget = new QWidget;
+    QVBoxLayout *controlLayout = new QVBoxLayout(controlWidget);
+    controlLayout->addWidget(ui->textEdit);
+    controlLayout->addWidget(ui->loadFileButton);
+    controlLayout->addWidget(ui->generateRandomButton);
+    controlLayout->addWidget(ui->inputCitiesButton);
+    controlLayout->addWidget(ui->popSizeSpinBox);
+    controlLayout->addWidget(ui->mutationRateSpinBox);
+    controlLayout->addWidget(ui->maxGenSpinBox);
+    controlLayout->addWidget(ui->runStepButton);
+    controlLayout->addWidget(ui->runToEndButton);
+    controlLayout->addWidget(ui->solutionComboBox);
+    controlLayout->addWidget(ui->generationLabel);
+    controlLayout->addWidget(ui->bestFitnessLabel);
+    controlLayout->addWidget(ui->avgFitnessLabel);
+    controlLayout->addStretch();
+    mainLayout->addWidget(controlWidget, 1);
+
+    QWidget *outputWidget = new QWidget;
+    QVBoxLayout *rightLayout = new QVBoxLayout(outputWidget);
+    QHBoxLayout *viewLayout = new QHBoxLayout;
+    viewLayout->addWidget(ui->graphicsView);
+    viewLayout->addWidget(ui->compareGraphicsView);
+    rightLayout->addLayout(viewLayout);
+    rightLayout->addWidget(chartView);
+    rightLayout->addStretch();
+    mainLayout->addWidget(outputWidget, 2);
 
     updateButtonsState();
 }
@@ -51,22 +90,37 @@ void Gui::setupChart()
     chart = new QChart();
     chart->addSeries(bestFitnessSeries);
     chart->addSeries(avgFitnessSeries);
-    chart->createDefaultAxes();
+
+    QValueAxis *axisX = new QValueAxis();
+    axisX->setTitleText("Поколение");
+    axisX->setLabelFormat("%.0f");
+    axisX->setTickInterval(1.0);
+    axisX->setMinorTickCount(0);
+    axisX->setRange(1, 10);
+    chart->addAxis(axisX, Qt::AlignBottom);
+    bestFitnessSeries->attachAxis(axisX);
+    avgFitnessSeries->attachAxis(axisX);
+
+    QValueAxis *axisY = new QValueAxis();
+    axisY->setTitleText("Приспособленность");
+    axisY->setLabelFormat("%.0f");
+    axisY->setMinorTickCount(0);
+    axisY->setRange(0, 10);
+    chart->addAxis(axisY, Qt::AlignLeft);
+    bestFitnessSeries->attachAxis(axisY);
+    avgFitnessSeries->attachAxis(axisY);
+
     chart->setTitle("Динамика приспособленности по поколениям");
     chart->legend()->setVisible(true);
     chart->setTitleFont(QFont("Arial", 12));
-    chart->axes(Qt::Horizontal).first()->setTitleFont(QFont("Arial", 10));
-    chart->axes(Qt::Vertical).first()->setTitleFont(QFont("Arial", 10));
+    axisX->setTitleFont(QFont("Arial", 10));
+    axisY->setTitleFont(QFont("Arial", 10));
     chart->legend()->setFont(QFont("Arial", 10));
-
-    chart->axes(Qt::Horizontal).first()->setTitleText("Поколение");
-    chart->axes(Qt::Vertical).first()->setTitleText("Приспособленность");
 
     chartView = new QChartView(chart);
     chartView->setRenderHint(QPainter::Antialiasing);
-    chartView->setMinimumSize(600, 400);
-
-    ui->verticalLayout_3->addWidget(chartView);
+    chartView->setMinimumSize(800, 400);
+    chartView->setMaximumHeight(400);
 }
 
 void Gui::updateChart(int generation, double bestFitness, double avgFitness)
@@ -74,9 +128,12 @@ void Gui::updateChart(int generation, double bestFitness, double avgFitness)
     bestFitnessSeries->append(generation, bestFitness);
     avgFitnessSeries->append(generation, avgFitness);
 
-    chart->axes(Qt::Horizontal).first()->setRange(0, generation + 1);
+    QValueAxis *axisX = qobject_cast<QValueAxis*>(chart->axes(Qt::Horizontal).first());
+    axisX->setRange(1, std::max(1, generation));
+
     double maxFitness = std::max(bestFitness, avgFitness);
-    chart->axes(Qt::Vertical).first()->setRange(0, maxFitness * 1.1);
+    QValueAxis *axisY = qobject_cast<QValueAxis*>(chart->axes(Qt::Vertical).first());
+    axisY->setRange(0, maxFitness * 1.1);
 
     ui->generationLabel->setText(QString("Поколение: %1").arg(generation));
     ui->bestFitnessLabel->setText(QString("Лучшая приспособленность: %1").arg(bestFitness, 0, 'f', 2));
@@ -201,8 +258,9 @@ void Gui::drawSolution()
     minY -= paddingY;
     maxY += paddingY;
 
-    double scaleX = ui->graphicsView->width() / (maxX - minX);
-    double scaleY = ui->graphicsView->height() / (maxY - minY);
+    double viewSize = std::min(ui->graphicsView->width(), ui->graphicsView->height());
+    double scaleX = viewSize / (maxX - minX);
+    double scaleY = viewSize / (maxY - minY);
 
     // Отрисовка городов
     QPen pointPen(Qt::red);
@@ -217,44 +275,10 @@ void Gui::drawSolution()
         label->setPos(x + 5, y + 5);
     }
 
+    // Отрисовка пути лучшего решения
     drawBestSolutionPath(bestSolution);
 }
-void Gui::drawCompareSolution()
-{
-    compareScene->clear();
-    if (cities.isEmpty()) return;
 
-    double minX = cities[0].x, maxX = cities[0].x;
-    double minY = cities[0].y, maxY = cities[0].y;
-    for (const auto &p : cities) {
-        minX = std::min(minX, p.x);
-        maxX = std::max(maxX, p.x);
-        minY = std::min(minY, p.y);
-        maxY = std::max(maxY, p.y);
-    }
-
-    double paddingX = (maxX - minX) * 0.1;
-    double paddingY = (maxY - minY) * 0.1;
-    minX -= paddingX;
-    maxX += paddingX;
-    minY -= paddingY;
-    maxY += paddingY;
-
-    double scaleX = ui->compareGraphicsView->width() / (maxX - minX);
-    double scaleY = ui->compareGraphicsView->height() / (maxY - minY);
-
-    QPen pointPen(Qt::red);
-    QBrush pointBrush(Qt::red);
-    for (int i = 0; i < cities.size(); ++i) {
-        const auto &p = cities[i];
-        double x = (p.x - minX) * scaleX;
-        double y = (p.y - minY) * scaleY;
-
-        compareScene->addEllipse(x - 5, y - 5, 10, 10, pointPen, pointBrush);
-        QGraphicsTextItem *label = compareScene->addText(QString("Город %1 (П: %2)").arg(i + 1).arg(p.priority));
-        label->setPos(x + 5, y + 5);
-    }
-}
 void Gui::drawBestSolutionPath(const QVector<int> &solution)
 {
     if (solution.isEmpty()) return;
@@ -275,8 +299,9 @@ void Gui::drawBestSolutionPath(const QVector<int> &solution)
     minY -= paddingY;
     maxY += paddingY;
 
-    double scaleX = ui->graphicsView->width() / (maxX - minX);
-    double scaleY = ui->graphicsView->height() / (maxY - minY);
+    double viewSize = std::min(ui->graphicsView->width(), ui->graphicsView->height());
+    double scaleX = viewSize / (maxX - minX);
+    double scaleY = viewSize / (maxY - minY);
 
     QPen linePen(Qt::blue);
     linePen.setWidth(2);
@@ -298,6 +323,44 @@ void Gui::drawBestSolutionPath(const QVector<int> &solution)
         double x2 = (cities[firstCity].x - minX) * scaleX;
         double y2 = (cities[firstCity].y - minY) * scaleY;
         scene->addLine(x1, y1, x2, y2, linePen);
+    }
+}
+
+void Gui::drawCompareSolution()
+{
+    compareScene->clear();
+    if (cities.isEmpty()) return;
+
+    double minX = cities[0].x, maxX = cities[0].x;
+    double minY = cities[0].y, maxY = cities[0].y;
+    for (const auto &p : cities) {
+        minX = std::min(minX, p.x);
+        maxX = std::max(maxX, p.x);
+        minY = std::min(minY, p.y);
+        maxY = std::max(maxY, p.y);
+    }
+
+    double paddingX = (maxX - minX) * 0.1;
+    double paddingY = (maxY - minY) * 0.1;
+    minX -= paddingX;
+    maxX += paddingX;
+    minY -= paddingY;
+    maxY += paddingY;
+
+    double viewSize = std::min(ui->compareGraphicsView->width(), ui->compareGraphicsView->height());
+    double scaleX = viewSize / (maxX - minX);
+    double scaleY = viewSize / (maxY - minY);
+
+    QPen pointPen(Qt::red);
+    QBrush pointBrush(Qt::red);
+    for (int i = 0; i < cities.size(); ++i) {
+        const auto &p = cities[i];
+        double x = (p.x - minX) * scaleX;
+        double y = (p.y - minY) * scaleY;
+
+        compareScene->addEllipse(x - 5, y - 5, 10, 10, pointPen, pointBrush);
+        QGraphicsTextItem *label = compareScene->addText(QString("Город %1 (П: %2)").arg(i + 1).arg(p.priority));
+        label->setPos(x + 5, y + 5);
     }
 }
 

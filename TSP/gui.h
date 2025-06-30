@@ -49,10 +49,10 @@ private:
 
     void drawSolution();
     void drawCompareSolution();
+    void drawBestSolutionPath(const QVector<int> &solution);
     void updateButtonsState();
     void setupChart();
     void simulateAlgorithm();
-    void drawBestSolutionPath(const QVector<int> &solution);
 };
 
 #endif // GUI_H
