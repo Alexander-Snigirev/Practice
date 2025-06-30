@@ -26,7 +26,7 @@ void print_lst(std::vector<Town> towns){
     }
 }
 
-void print_matrix(std::vector<std::vector<double> > matrix){
+void print_matrix(std::vector<std::vector<double>> matrix){
     for(int i=0;i<matrix.size();i++){
         for(int j=0;j<matrix.size();j++){
             std::cout<<matrix[i][j]<<" ";
@@ -34,7 +34,7 @@ void print_matrix(std::vector<std::vector<double> > matrix){
         std::cout<<"\n";
     }
 }
-void print_matrix(std::vector<std::vector<int> > matrix){
+void print_matrix(std::vector<std::vector<int>> matrix){
     for(int i=0;i<matrix.size();i++){
         for(int j=0;j<matrix[0].size();j++){
             std::cout<<matrix[i][j]<<" ";
@@ -77,9 +77,9 @@ std::vector<Town> console_input(){
     return towns;
 }
 
-std::vector<std::vector<double> > calculate_distances(std::vector<Town>& towns) {
+std::vector<std::vector<double>> calculate_distances(std::vector<Town>& towns) {
     int n = towns.size();
-    std::vector<std::vector<double> > matrix(n, std::vector<double>(n, 0));
+    std::vector<std::vector<double>> matrix(n, std::vector<double>(n, 0));
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             matrix[i][j] = sqrt(pow(towns[i].x - towns[j].x, 2) + pow(towns[i].y - towns[j].y, 2));
@@ -89,22 +89,22 @@ std::vector<std::vector<double> > calculate_distances(std::vector<Town>& towns) 
     return matrix;
 }
 
-std::map<int, std::vector<int> > make_priority_groups(std::vector<Town>& towns) {
-    std::map<int, std::vector<int> > priority_groups;
+std::map<int, std::vector<int>> make_priority_groups(std::vector<Town>& towns) {
+    std::map<int, std::vector<int>> priority_groups;
     for (int i = 0; i < towns.size(); i++) {
         priority_groups[towns[i].priority].push_back(i);
     }
     // Отладочный вывод
-    /* for (const auto& [priority, group] : priority_groups) {
-         std::cout << "Priority " << priority << ": ";
-         for (int idx : group) {
-             std::cout << idx << " ";
-         }
-         std::cout << std::endl;
-     }*/
+   /* for (const auto& [priority, group] : priority_groups) {
+        std::cout << "Priority " << priority << ": ";
+        for (int idx : group) {
+            std::cout << idx << " ";
+        }
+        std::cout << std::endl;
+    }*/
     return priority_groups;
 }
-bool is_valid_chromosome(const std::vector<int>& individ, const std::map<int, std::vector<int> >& priority_groups) {
+bool is_valid_chromosome(const std::vector<int>& individ, const std::map<int, std::vector<int>>& priority_groups) {
     size_t n = individ.size();
     std::vector<bool> seen(n, false);
     for (int idx : individ) {
@@ -116,7 +116,7 @@ bool is_valid_chromosome(const std::vector<int>& individ, const std::map<int, st
     }
 
     // Формируем диапазоны групп в порядке убывания приоритетов
-    std::map<int, std::pair<size_t, size_t> > group_ranges;
+    std::map<int, std::pair<size_t, size_t>> group_ranges;
     size_t pos = 0;
     for (auto it = priority_groups.rbegin(); it != priority_groups.rend(); ++it) {
         group_ranges[it->first] = {pos, pos + it->second.size()};
@@ -145,10 +145,10 @@ bool is_valid_chromosome(const std::vector<int>& individ, const std::map<int, st
     return true;
 }
 
-std::vector<std::vector<int> > make_start_population(std::vector<Town>& towns,
-                                                    std::vector<std::vector<double> >& distances,
-                                                    std::map<int, std::vector<int> > priority_groups, int p_size) {
-    std::vector<std::vector<int> > start_population(p_size, std::vector<int>(towns.size(), -1));
+std::vector<std::vector<int>> make_start_population(std::vector<Town>& towns,
+                                                    std::vector<std::vector<double>>& distances,
+                                                    std::map<int, std::vector<int>> priority_groups, int p_size) {
+    std::vector<std::vector<int>> start_population(p_size, std::vector<int>(towns.size(), -1));
     std::random_device rd;
     std::mt19937 gen(rd());
 
@@ -191,7 +191,7 @@ std::vector<std::vector<int> > make_start_population(std::vector<Town>& towns,
     return start_population;
 }
 
-double fitness_f(const std::vector<int>& individ, const std::vector<std::vector<double> >& matrix) {
+double fitness_f(const std::vector<int>& individ, const std::vector<std::vector<double>>& matrix) {
     int mod = 1000000;
     double way_length = 0.0;
     for (int i = 0; i < individ.size(); i++) {
@@ -215,8 +215,8 @@ double fitness_f(const std::vector<int>& individ, const std::vector<std::vector<
 }
 
 
-std::vector<int> tournament_selection(const std::vector<std::vector<int> >& population,
-                                      const std::vector<std::vector<double> >& matrix, int tournament_size) {
+std::vector<int> tournament_selection(const std::vector<std::vector<int>>& population,
+                                      const std::vector<std::vector<double>>& matrix, int tournament_size) {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> dis(0, population.size() - 1);
@@ -234,15 +234,15 @@ std::vector<int> tournament_selection(const std::vector<std::vector<int> >& popu
             best_fitness = candidate_fitness;
         }
     }
-    std::cout << "Selected chromosome in tournament: ";
+    /*std::cout << "Selected chromosome in tournament: ";
     for (int x : best) std::cout << x << " ";
-    std::cout << "with fitness: " << best_fitness << "\n";
+    std::cout << "with fitness: " << best_fitness << "\n";*/
     return best;
 }
 
 
-std::vector<double> calculate_fitnesses(const std::vector<std::vector<int> >& population,
-                                        const std::vector<std::vector<double> >& matrix, int population_size) {
+std::vector<double> calculate_fitnesses(const std::vector<std::vector<int>>& population,
+                                        const std::vector<std::vector<double>>& matrix, int population_size) {
     std::vector<double> fitnesses(population_size);
     for (int i = 0; i < population_size; i++) {
         const auto& chromosome = population[i];
@@ -271,16 +271,16 @@ std::vector<double> calculate_fitnesses(const std::vector<std::vector<int> >& po
         } else {
             fitnesses[i] = 1000000 - distance; // Преобразуем расстояние в стоимость
         }
-        std::cout << "Fitness for chromosome " << i << ": ";
+        /*std::cout << "Fitness for chromosome " << i << ": ";
         for (int x : chromosome) std::cout << x << " ";
-        std::cout << " = " << fitnesses[i] << " (Distance: " << distance << ")\n";
+        std::cout << " = " << fitnesses[i] << " (Distance: " << distance << ")\n";*/
     }
     return fitnesses;
 }
 
 void ox1_crossover(const std::vector<int>& parent_fir, const std::vector<int>& parent_sec,
                    std::vector<int>& child_fir, std::vector<int>& child_sec,
-                   const std::map<int, std::vector<int> >& priority_groups,
+                   const std::map<int, std::vector<int>>& priority_groups,
                    double cross_prob) {
     child_fir = parent_fir;
     child_sec = parent_sec;
@@ -295,7 +295,7 @@ void ox1_crossover(const std::vector<int>& parent_fir, const std::vector<int>& p
     }
 
     // Определяем диапазоны для каждой группы приоритетов
-    std::map<int, std::pair<size_t, size_t> > group_ranges;
+    std::map<int, std::pair<size_t, size_t>> group_ranges;
     size_t pos = 0;
     for (auto it = priority_groups.rbegin(); it != priority_groups.rend(); ++it) {
         group_ranges[it->first] = {pos, pos + it->second.size()};
@@ -430,13 +430,13 @@ void ox1_crossover(const std::vector<int>& parent_fir, const std::vector<int>& p
     std::cout << "Child_sec:  "; for (int x : child_sec) std::cout << x << " "; std::cout << "\n";*/
 }
 
-void mutate(std::vector<int>& individ, const std::map<int, std::vector<int> >& priority_groups, double mut_prob) {
+void mutate(std::vector<int>& individ, const std::map<int, std::vector<int>>& priority_groups, double mut_prob) {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> prob(0, 1);
 
     // Определяем диапазоны для каждой группы приоритетов
-    std::map<int, std::pair<size_t, size_t> > group_ranges;
+    std::map<int, std::pair<size_t, size_t>> group_ranges;
     size_t pos = 0;
     for (auto it = priority_groups.rbegin(); it != priority_groups.rend(); ++it) {
         group_ranges[it->first] = {pos, pos + it->second.size()};
@@ -483,9 +483,9 @@ int find_best_individ(const std::vector<double>& fitnesses) {
 
 
 std::vector<double> Evolution(std::vector<Town>& towns, int population_size, int generations_number, double mut_prob, double cross_prob) {
-    std::vector<std::vector<double> > matrix = calculate_distances(towns);
-    std::map<int, std::vector<int> > priority_groups = make_priority_groups(towns);
-    std::vector<std::vector<int> > population = make_start_population(towns, matrix, priority_groups, population_size);
+    std::vector<std::vector<double>> matrix = calculate_distances(towns);
+    std::map<int, std::vector<int>> priority_groups = make_priority_groups(towns);
+    std::vector<std::vector<int>> population = make_start_population(towns, matrix, priority_groups, population_size);
 
     // Проверка начальной популяции
     for (size_t i = 0; i < population.size(); i++) {
@@ -497,7 +497,7 @@ std::vector<double> Evolution(std::vector<Town>& towns, int population_size, int
     }
 
     std::vector<double> fitnesses = calculate_fitnesses(population, matrix, population_size);
-    std::vector<std::vector<int> > best_individs(generations_number, std::vector<int>(towns.size(), -1));
+    std::vector<std::vector<int>> best_individs(generations_number, std::vector<int>(towns.size(), -1));
     int best_index = find_best_individ(fitnesses);
     std::vector<double> best_fitnesses(generations_number);
     best_individs[0] = population[best_index];
@@ -509,7 +509,7 @@ std::vector<double> Evolution(std::vector<Town>& towns, int population_size, int
 
     for (int i = 1; i < generations_number; i++) {
         std::cout << "Generation " << i << "\n";
-        std::vector<std::vector<int> > new_population(population_size, std::vector<int>(towns.size(), -1));
+        std::vector<std::vector<int>> new_population(population_size, std::vector<int>(towns.size(), -1));
         int index = 0;
 
         if (index < population_size) {
@@ -568,7 +568,7 @@ std::vector<double> Evolution(std::vector<Town>& towns, int population_size, int
 
 int main() {
     vector<Town> twns = console_input();
-    std::vector<double> results = Evolution(twns, 50, 150, 0.1, 0.8);
+    std::vector<double> results = Evolution(twns, 50, 150, 0.1, 0.9);
     print_vector(results);
     return 0;
 }
