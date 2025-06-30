@@ -30,6 +30,7 @@ private slots:
     void on_inputCitiesButton_clicked();
     void on_runStepButton_clicked();
     void on_runToEndButton_clicked();
+    void on_compareButton_clicked();
     void updateChart(int generation, double bestFitness, double avgFitness);
 
 private:
@@ -40,6 +41,7 @@ private:
     QVector<int> bestSolution;
     int currentGeneration;
     CityDataParser parser;
+    QVector<QPair<int, QVector<int>>> solutionHistory;
 
     // Для графика
     QChart *chart;
@@ -48,7 +50,7 @@ private:
     QLineSeries *avgFitnessSeries;
 
     void drawSolution();
-    void drawCompareSolution();
+    void drawCompareSolution(const QVector<int> &solution = QVector<int>());
     void drawBestSolutionPath(const QVector<int> &solution);
     void updateButtonsState();
     void setupChart();

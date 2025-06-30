@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
+#include <QPushButton>
 
 Gui::Gui(QWidget *parent)
         : QMainWindow(parent), ui(new Ui::Gui)
@@ -33,7 +34,6 @@ Gui::Gui(QWidget *parent)
     ui->graphicsView->setOptimizationFlag(QGraphicsView::DontSavePainterState, true);
     ui->compareGraphicsView->setOptimizationFlag(QGraphicsView::DontSavePainterState, true);
 
-    // Инициализация графика
     setupChart();
     currentGeneration = 0;
 
@@ -53,6 +53,8 @@ Gui::Gui(QWidget *parent)
     controlLayout->addWidget(ui->runStepButton);
     controlLayout->addWidget(ui->runToEndButton);
     controlLayout->addWidget(ui->solutionComboBox);
+    QPushButton *compareButton = new QPushButton("Сравнить", controlWidget);
+    controlLayout->addWidget(compareButton);
     controlLayout->addWidget(ui->generationLabel);
     controlLayout->addWidget(ui->bestFitnessLabel);
     controlLayout->addWidget(ui->avgFitnessLabel);
@@ -68,6 +70,8 @@ Gui::Gui(QWidget *parent)
     rightLayout->addWidget(chartView);
     rightLayout->addStretch();
     mainLayout->addWidget(outputWidget, 2);
+
+    connect(compareButton, &QPushButton::clicked, this, &Gui::on_compareButton_clicked);
 
     updateButtonsState();
 }
@@ -104,7 +108,6 @@ void Gui::setupChart()
     QValueAxis *axisY = new QValueAxis();
     axisY->setTitleText("Приспособленность");
     axisY->setLabelFormat("%.0f");
-    axisY->setMinorTickCount(0);
     axisY->setRange(0, 10);
     chart->addAxis(axisY, Qt::AlignLeft);
     bestFitnessSeries->attachAxis(axisY);
@@ -160,6 +163,8 @@ void Gui::on_loadFileButton_clicked()
     if (parser.parseFromFile(fileName, cities, errorMessages)) {
         bestSolution.clear();
         currentGeneration = 0;
+        solutionHistory.clear();
+        ui->solutionComboBox->clear();
         bestFitnessSeries->clear();
         avgFitnessSeries->clear();
         drawSolution();
@@ -186,6 +191,8 @@ void Gui::on_generateRandomButton_clicked()
     }
     bestSolution.clear();
     currentGeneration = 0;
+    solutionHistory.clear();
+    ui->solutionComboBox->clear();
     bestFitnessSeries->clear();
     avgFitnessSeries->clear();
     drawSolution();
@@ -199,6 +206,8 @@ void Gui::on_inputCitiesButton_clicked()
     if (parser.parseFromText(ui->textEdit->toPlainText(), cities, errorMessages)) {
         bestSolution.clear();
         currentGeneration = 0;
+        solutionHistory.clear();
+        ui->solutionComboBox->clear();
         bestFitnessSeries->clear();
         avgFitnessSeries->clear();
         drawSolution();
@@ -217,7 +226,6 @@ void Gui::on_runStepButton_clicked()
     double bestFitness = 1.0 + currentGeneration * 0.5 + (rand() % 10) * 0.1;
     double avgFitness = 1.0 + currentGeneration * 0.3 + (rand() % 5) * 0.1;
 
-    // Генерация случайного решения для демонстрации
     bestSolution.clear();
     QVector<int> indices(cities.size());
     for (int i = 0; i < cities.size(); ++i) indices[i] = i;
@@ -225,6 +233,9 @@ void Gui::on_runStepButton_clicked()
     std::mt19937 g(rd());
     std::shuffle(indices.begin(), indices.end(), g);
     bestSolution = indices;
+
+    solutionHistory.append(qMakePair(currentGeneration, bestSolution));
+    ui->solutionComboBox->addItem(QString("Поколение %1").arg(currentGeneration));
 
     updateChart(currentGeneration, bestFitness, avgFitness);
     drawSolution();
@@ -235,6 +246,17 @@ void Gui::on_runToEndButton_clicked()
     if (cities.isEmpty()) return;
 
     simulateAlgorithm();
+}
+
+void Gui::on_compareButton_clicked()
+{
+    int index = ui->solutionComboBox->currentIndex();
+    if (index >= 0 && index < solutionHistory.size()) {
+        const auto &solution = solutionHistory[index].second;
+        drawCompareSolution(solution);
+    } else {
+        QMessageBox::information(this, "Информация", "Выберите поколение для сравнения");
+    }
 }
 
 void Gui::drawSolution()
@@ -262,7 +284,6 @@ void Gui::drawSolution()
     double scaleX = viewSize / (maxX - minX);
     double scaleY = viewSize / (maxY - minY);
 
-    // Отрисовка городов
     QPen pointPen(Qt::red);
     QBrush pointBrush(Qt::red);
     for (int i = 0; i < cities.size(); ++i) {
@@ -275,7 +296,6 @@ void Gui::drawSolution()
         label->setPos(x + 5, y + 5);
     }
 
-    // Отрисовка пути лучшего решения
     drawBestSolutionPath(bestSolution);
 }
 
@@ -314,7 +334,6 @@ void Gui::drawBestSolutionPath(const QVector<int> &solution)
         double y2 = (cities[city2].y - minY) * scaleY;
         scene->addLine(x1, y1, x2, y2, linePen);
     }
-
     if (!solution.isEmpty()) {
         int firstCity = solution[0];
         int lastCity = solution[solution.size() - 1];
@@ -326,7 +345,7 @@ void Gui::drawBestSolutionPath(const QVector<int> &solution)
     }
 }
 
-void Gui::drawCompareSolution()
+void Gui::drawCompareSolution(const QVector<int> &solution)
 {
     compareScene->clear();
     if (cities.isEmpty()) return;
@@ -362,12 +381,35 @@ void Gui::drawCompareSolution()
         QGraphicsTextItem *label = compareScene->addText(QString("Город %1 (П: %2)").arg(i + 1).arg(p.priority));
         label->setPos(x + 5, y + 5);
     }
+
+    if (!solution.isEmpty()) {
+        QPen linePen(Qt::blue);
+        linePen.setWidth(2);
+        for (int i = 0; i < solution.size() - 1; ++i) {
+            int city1 = solution[i];
+            int city2 = solution[i + 1];
+            double x1 = (cities[city1].x - minX) * scaleX;
+            double y1 = (cities[city1].y - minY) * scaleY;
+            double x2 = (cities[city2].x - minX) * scaleX;
+            double y2 = (cities[city2].y - minY) * scaleY;
+            compareScene->addLine(x1, y1, x2, y2, linePen);
+        }
+        int firstCity = solution[0];
+        int lastCity = solution[solution.size() - 1];
+        double x1 = (cities[lastCity].x - minX) * scaleX;
+        double y1 = (cities[lastCity].y - minY) * scaleY;
+        double x2 = (cities[firstCity].x - minX) * scaleX;
+        double y2 = (cities[firstCity].y - minY) * scaleY;
+        compareScene->addLine(x1, y1, x2, y2, linePen);
+    }
 }
 
 void Gui::simulateAlgorithm()
 {
     currentGeneration = 0;
     bestSolution.clear();
+    solutionHistory.clear();
+    ui->solutionComboBox->clear();
     bestFitnessSeries->clear();
     avgFitnessSeries->clear();
 
@@ -380,12 +422,14 @@ void Gui::simulateAlgorithm()
         double bestFitness = 1.0 + generation * 0.5 + (rand() % 10) * 0.1;
         double avgFitness = 1.0 + generation * 0.3 + (rand() % 5) * 0.1;
 
-        // Генерация случайного решения для демонстрации
         bestSolution.clear();
         QVector<int> indices(cities.size());
         for (int i = 0; i < cities.size(); ++i) indices[i] = i;
         std::shuffle(indices.begin(), indices.end(), g);
         bestSolution = indices;
+
+        solutionHistory.append(qMakePair(currentGeneration, bestSolution));
+        ui->solutionComboBox->addItem(QString("Поколение %1").arg(currentGeneration));
 
         updateChart(generation, bestFitness, avgFitness);
         drawSolution();
