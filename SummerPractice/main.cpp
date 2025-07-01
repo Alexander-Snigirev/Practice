@@ -42,10 +42,10 @@ void print_matrix(std::vector<std::vector<int>> matrix){
         std::cout<<"\n\n";
     }
 }
-void print_vector(std::vector<double>& vec){
+void print_dvector(std::vector<double>& vec){
     std::cout<<"[";
     for(double item: vec){
-        std::cout<<item<<", ";
+        std::cout<<1e6-item<<", ";
     }
     std::cout<<"]"<<std::endl;
 }
@@ -158,7 +158,7 @@ std::vector<std::vector<int>> make_start_population(std::vector<Town>& towns,
 
 
 double fitness_f(std::vector<int>& individ, std::vector<std::vector<double>>& matrix){
-    int mod = 1e6;
+    double mod = 1e6;
     double way_length = 0.0;
     for(int i = 1;i<individ.size();i++){
         way_length+=matrix[individ[i-1]][individ[i]];
@@ -443,12 +443,6 @@ void mutate(std::vector<int>& individ, const std::map<int, std::vector<int>>& pr
     //std::cout << "\n";
 }
 
-
-
-
-
-
-
 int find_best_individ(std::vector<double>& fitnesses){
     double best = 0.0;
     int index=0;
@@ -482,8 +476,8 @@ std::vector<double> Evolution(std::vector<Town>& towns, int population_size, int
         new_population[index+1] = population[best_index];
         index+=2;
         while(index < population_size){
-            std::vector<int> parent_first = tournament_selection(population, fitnesses, 2);
-            std::vector<int> parent_second = tournament_selection(population, fitnesses, 2);
+            std::vector<int> parent_first = tournament_selection(population, fitnesses, 4);
+            std::vector<int> parent_second = tournament_selection(population, fitnesses, 4);
             std::vector<int> child_first, child_second;
             ox1_crossover(parent_first, parent_second, child_first, child_second, priority_groups, cross_prob);
             mutate(child_first, priority_groups, mut_prob);
@@ -499,6 +493,7 @@ std::vector<double> Evolution(std::vector<Town>& towns, int population_size, int
         best_fitnesses[i] = fitnesses[best_index];
     }
     print_matrix(best_individs);
+
     return best_fitnesses;
 }
 
@@ -506,7 +501,7 @@ int main(int argc, char** argv)
 {
     vector<Town> twns = console_input();
     std::vector<double> results = Evolution(twns, atoi(argv[1]), atoi(argv[2]), 0.9, 0.02);
-    print_vector(results);
+    print_dvector(results);
 
     return 0;
 }
