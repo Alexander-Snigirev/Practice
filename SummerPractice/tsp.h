@@ -6,6 +6,7 @@
 #include <map>
 #include <string>
 #include <random>
+#include "rapidcsv.h"
 
 struct Town {
     int priority;
@@ -32,6 +33,7 @@ std::vector<int> tournament_selection(const std::vector<std::vector<int>>& popul
                                       const std::vector<double>& fitnesses, int k);
 std::vector<double> calculate_fitnesses(std::vector<std::vector<int>>& population,
                                         std::vector<std::vector<double>>& matrix, int p_size);
+double calculate_var_len(std::vector<double>& fitnesses);
 bool is_valid_chromosome(const std::vector<int>& individ,
                          const std::map<int, std::vector<int>>& priority_groups);
 void group_crossover(const std::vector<int>& group1, const std::vector<int>& group2,
@@ -50,6 +52,8 @@ void mutate(std::vector<int>& individ,
             double mutation_prob);
 int find_best_individ(std::vector<double>& fitnesses);
 std::vector<double> Evolution(std::vector<Town>& towns, int population_size,
-                              int generations_number, double mut_prob, double cross_prob);
+                              int generations_number, double mut_prob, double cross_prob,const std::string& filename);
+void save_to_csv(const std::vector<double>& best_lens, const std::vector<double>& var_lens,
+                 const std::vector<std::vector<int>>& best_individs, const std::string& filename);
 
 #endif

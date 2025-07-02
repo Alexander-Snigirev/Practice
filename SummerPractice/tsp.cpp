@@ -3,6 +3,7 @@
 #include <cmath>
 #include <climits>
 
+
 using namespace std;
 
 Town::Town(double x, double y, int priority, string name) {
@@ -49,6 +50,15 @@ void print_dvector(vector<double>& vec) {
     cout << "]\n";
 }
 
+void format_dvector(vector<double>& vec) {
+    if (vec.empty()) {
+        return;
+    }
+    for(size_t i = 0; i < vec.size(); i++) {
+        vec[i] = (1e6 - vec[i]);
+    }
+}
+
 void print_vector(vector<int>& vec) {
     cout << "[";
     for(size_t i = 0; i < vec.size(); i++) {
@@ -76,7 +86,6 @@ void print_priority_groups(const std::map<int, std::vector<int>>& priority_group
 void print_priority_groups_with_ranges(const std::map<int, std::vector<int>>& priority_groups) {
     std::cout << "Priority Groups with Position Ranges:\n";
 
-    // Вычисляем диапазоны позиций в порядке возрастания приоритетов
     std::map<int, std::pair<size_t, size_t>> group_ranges;
     size_t pos = 0;
     for (const auto& [priority, group] : priority_groups) {
@@ -84,7 +93,6 @@ void print_priority_groups_with_ranges(const std::map<int, std::vector<int>>& pr
         pos += group.size();
     }
 
-    // Выводим в порядке убывания приоритетов
     for (auto it = priority_groups.rbegin(); it != priority_groups.rend(); ++it) {
         int priority = it->first;
         const auto& group = it->second;
@@ -196,6 +204,14 @@ std::vector<double> calculate_fitnesses(vector<vector<int>>& population, vector<
         fitnesses[i] = fitness_f(population[i], matrix);
     }
     return fitnesses;
+}
+
+double calculate_var_len(std::vector<double>& fitnesses){
+    if (fitnesses.empty()) {
+        return 0.0;
+    }
+    double sum = std::accumulate(fitnesses.begin(), fitnesses.end(), 0.0);
+    return sum / fitnesses.size();
 }
 
 bool is_valid_chromosome(const vector<int>& individ, const map<int, vector<int>>& priority_groups) {
@@ -423,17 +439,18 @@ int find_best_individ(vector<double>& fitnesses) {
     return index;
 }
 
-std::vector<double> Evolution(std::vector<Town>& towns, int population_size, int generations_number, double mut_prob, double cross_prob){
+std::vector<double> Evolution(std::vector<Town>& towns, int population_size, int generations_number, double mut_prob, double cross_prob, const std::string& filename){
     std::vector<std::vector<double>> matrix = calculate_distances(towns);
     std::map<int, std::vector<int>> priority_groups = make_priority_groups(towns);
     std::vector<std::vector<int>> population = make_start_population(towns, matrix, priority_groups, population_size);
     std::vector<double> fitnesses = calculate_fitnesses(population, matrix, population_size);
+    std::vector<double> var_lens(generations_number);
     std::vector<std::vector<int>> best_individs(generations_number, std::vector<int>(towns.size(), -1));
     int best_index = find_best_individ(fitnesses);
     std::vector<double> best_fitnesses(generations_number);
     best_individs[0] = population[best_index];
     best_fitnesses[0] = fitnesses[best_index];
-
+    var_lens[0] = calculate_var_len(fitnesses);
     for(int i=1;i<generations_number;i++){
         std::vector<std::vector<int>> new_population(population_size, std::vector<int>(towns.size(), 0));
         int index=0;
@@ -456,8 +473,49 @@ std::vector<double> Evolution(std::vector<Town>& towns, int population_size, int
         best_index = find_best_individ(fitnesses);
         best_individs[i] = population[best_index];
         best_fitnesses[i] = fitnesses[best_index];
+        var_lens[i] = calculate_var_len(fitnesses);
     }
-    print_matrix(best_individs);
-
+    //print_matrix(best_individs);
+    format_dvector(best_fitnesses);
+    format_dvector(var_lens);
+    save_to_csv(best_fitnesses, var_lens,best_individs, filename);
     return best_fitnesses;
+}
+
+void save_to_csv(const std::vector<double>& best_lens, const std::vector<double>& var_lens,
+                 const std::vector<std::vector<int>>& best_individs, const std::string& filename) {
+    if (best_lens.size() != var_lens.size() || best_lens.size() != best_individs.size()) {
+        throw std::invalid_argument("Vectors best_lens, var_lens, and best_individs must have the same size");
+    }
+    if (best_lens.empty()) {
+        throw std::invalid_argument("Input vectors are empty");
+    }
+    size_t n = best_individs[0].size();
+    for (const auto& individ : best_individs) {
+        if (individ.size() != n) {
+            throw std::invalid_argument("All chromosomes in best_individs must have the same size");
+        }
+    }
+
+    rapidcsv::Document doc("", rapidcsv::LabelParams(0, -1), rapidcsv::SeparatorParams(','));
+
+    std::vector<std::string> headers = {"num"};
+    for (size_t i = 1; i <= n; ++i) {
+        headers.push_back("town" + std::to_string(i));
+    }
+    headers.push_back("best_len");
+    headers.push_back("var_len");
+    doc.SetRow(0, headers);
+
+    for (size_t i = 0; i < best_lens.size(); ++i) {
+        std::vector<std::string> row;
+        row.push_back(std::to_string(i));
+        for (int idx : best_individs[i]) {
+            row.push_back(std::to_string(idx));
+        }
+        row.push_back(std::to_string(best_lens[i]));
+        row.push_back(std::to_string(var_lens[i]));
+        doc.SetRow(i + 1, row);
+    }
+    doc.Save(filename);
 }
