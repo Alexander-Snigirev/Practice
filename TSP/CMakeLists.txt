@@ -8,7 +8,6 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-# Убедись, что Qt находится в пути поиска (обычно не нужно, если установлен через Homebrew)
 set(CMAKE_PREFIX_PATH "/opt/homebrew/Cellar/qt@5/5.15.16_2/lib/cmake/Qt5")
 
 find_package(Qt5 COMPONENTS Core Gui Widgets Charts REQUIRED)
@@ -17,13 +16,16 @@ find_package(OpenGL REQUIRED)
 set(SOURCES
         main.cpp
         gui.cpp
-        citydataparser.cpp
+        tsp.cpp
+        towndataparser.cpp
 )
 
 set(HEADERS
         gui.h
-        city.h
-        citydataparser.h
+        town.h
+        towndataparser.h
+        tsp.h
+        rapidcsv.h
 )
 
 set(FORMS
@@ -32,10 +34,9 @@ set(FORMS
 
 add_executable(TSP ${SOURCES} ${HEADERS} ${FORMS})
 
-# Отключаем поиск OpenGL в Qt5Gui
-set(Qt5Gui_OPENGL_INCLUDE_DIR "")  # Пустая строка, чтобы Qt5 не искал gl.h
 
-# Линкуем Qt5 без OpenGL
+set(Qt5Gui_OPENGL_INCLUDE_DIR "")
+
 target_link_libraries(TSP PRIVATE
         Qt5::Core
         Qt5::Gui
@@ -43,7 +44,6 @@ target_link_libraries(TSP PRIVATE
         Qt5::Charts
 )
 
-# На macOS добавляем только фреймворки (без заголовков)
 if(APPLE)
     target_link_libraries(TSP PRIVATE
             "-framework OpenGL"

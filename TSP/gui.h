@@ -4,11 +4,10 @@
 #include <QMainWindow>
 #include <QGraphicsScene>
 #include <QVector>
-#include <QRandomGenerator>
 #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
-#include "citydataparser.h"
-#include "city.h"
+#include "towndataparser.h"
+#include "tsp.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Gui; }
@@ -29,21 +28,24 @@ private slots:
     void on_generateRandomButton_clicked();
     void on_inputCitiesButton_clicked();
     void on_runStepButton_clicked();
-    void on_runToEndButton_clicked();
+    void on_backButton_clicked();
+    void on_applyButton_clicked();
     void on_compareButton_clicked();
+    void on_runToEndButton_clicked();
+    void on_solutionComboBox_changed(int index);
     void updateChart(int generation, double bestFitness, double avgFitness);
 
 private:
     Ui::Gui *ui;
     QGraphicsScene *scene;
     QGraphicsScene *compareScene;
-    QVector<City> cities;
+    QVector<Town> towns;
     QVector<int> bestSolution;
     int currentGeneration;
-    CityDataParser parser;
-    QVector<QPair<int, QVector<int>>> solutionHistory;
+    bool isAnimationRunning;
+    TownDataParser parser;
+    QVector<QPair<int, QPair<QVector<int>, QPair<double, double>>>> solutionHistory;
 
-    // Для графика
     QChart *chart;
     QChartView *chartView;
     QLineSeries *bestFitnessSeries;
@@ -54,7 +56,6 @@ private:
     void drawBestSolutionPath(const QVector<int> &solution);
     void updateButtonsState();
     void setupChart();
-    void simulateAlgorithm();
 };
 
 #endif // GUI_H
