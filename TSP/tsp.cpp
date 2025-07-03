@@ -2,13 +2,11 @@
 #include <algorithm>
 #include <cmath>
 #include <climits>
-
-Town::Town(double x, double y, int priority, std::string name) {
-    this->name = name;
-    this->priority = priority;
-    this->x = x;
-    this->y = y;
-}
+#include <random>
+#include <iostream>
+#include <map>
+#include <numeric>
+#include "rapidcsv.h"
 
 void print_lst(std::vector<Town> towns) {
     for (auto town : towns) {
@@ -151,6 +149,24 @@ double fitness_f(std::vector<int>& individ, std::vector<std::vector<double>>& ma
     }
     way_length += matrix[individ.back()][individ[0]];
     return mod - way_length;
+}
+
+double calculateFitness(const std::vector<int>& path, const std::vector<Town>& towns) {
+    if (path.empty() || path.size() != towns.size()) {
+        return std::numeric_limits<double>::max();
+    }
+    std::vector<std::vector<double>> matrix = calculate_distances(towns);
+    double way_length = 0.0;
+    for (size_t i = 1; i < path.size(); i++) {
+        int town1 = path[i - 1];
+        int town2 = path[i];
+        if (town1 < 0 || town1 >= static_cast<int>(towns.size()) || town2 < 0 || town2 >= static_cast<int>(towns.size())) {
+            return std::numeric_limits<double>::max();
+        }
+        way_length += matrix[town1][town2];
+    }
+    way_length += matrix[path.back()][path[0]];
+    return way_length;
 }
 
 std::vector<int> tournament_selection(const std::vector<std::vector<int>>& population, const std::vector<double>& fitnesses, int k) {
@@ -421,7 +437,7 @@ std::vector<double> Evolution(std::vector<Town>& towns, int population_size, int
     std::vector<double> fitnesses = calculate_fitnesses(population, matrix, population_size);
     std::vector<double> var_lens(generations_number);
     std::vector<std::vector<int>> best_individs(generations_number, std::vector<int>(towns.size(), -1));
-    std::vector<double> best_fitnesses(generations_number); // Объявляем best_fitnesses
+    std::vector<double> best_fitnesses(generations_number);
     int best_index = find_best_individ(fitnesses);
     best_individs[0] = population[best_index];
     best_fitnesses[0] = fitnesses[best_index];

@@ -50,5 +50,6 @@ std::vector<double> Evolution(std::vector<Town>& towns, int population_size,
                               int generations_number, double mut_prob, double cross_prob, const std::string& filename);
 void save_to_csv(const std::vector<double>& best_lens, const std::vector<double>& var_lens,
                  const std::vector<std::vector<int>>& best_individs, const std::string& filename);
+double calculateFitness(const std::vector<int>& path, const std::vector<Town>& towns);
 
 #endif

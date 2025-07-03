@@ -43,6 +43,7 @@ private:
     QVector<int> bestSolution;
     int currentGeneration;
     bool isAnimationRunning;
+    bool shouldUpdateChart;
     TownDataParser parser;
     QVector<QPair<int, QPair<QVector<int>, QPair<double, double>>>> solutionHistory;
 
